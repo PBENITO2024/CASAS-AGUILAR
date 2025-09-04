@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Sopa de Letras</title>
+  <style>
+    body { font-family: sans-serif; }
+    #board { display: grid; grid-template-columns: repeat(12, 30px); gap: 2px; margin-top: 20px; }
+    #board div { width: 30px; height: 30px; text-align: center; line-height: 30px; border: 1px solid #ccc; cursor: pointer; }
+    .found { background: yellow; }
+  </style>
+</head>
+<body>
+  <h1>Sopa de Letras</h1>
+  <div id="setup">
+    <input id="name" placeholder="Tu nombre">
+    <input id="room" placeholder="Sala">
+    <select id="category"></select>
+    <input id="rounds" type="number" value="3" min="1" max="10">
+    <button id="create">Crear</button>
+    <button id="join">Unirse</button>
+  </div>
+  <div id="game" style="display:none;">
+    <div id="info"></div>
+    <div id="board"></div>
+    <div id="words"></div>
+    <div id="scores"></div>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
+</body>
+</html>
