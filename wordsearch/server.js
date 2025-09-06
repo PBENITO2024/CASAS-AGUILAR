@@ -20,22 +20,29 @@ const categories = {
   tecnologia: ['LAPTOP', 'ROBOT', 'DRONE']
 };
 
+const playerColors = ['#e91e63', '#2196f3'];
 const games = {};
 
 io.on('connection', (socket) => {
-  socket.on('createGame', ({ room, category, rounds }) => {
+  socket.on('createGame', ({ room, name, category, rounds, single }) => {
     if (games[room]) return;
+    const color = playerColors[0];
     games[room] = {
-      players: {},
+      players: { [socket.id]: { name, color } },
       category,
       rounds,
       currentRound: 0,
       board: null,
       words: null,
-      scores: {}
+      scores: { [name]: 0 },
+      single
     };
     socket.join(room);
-    socket.emit('waiting');
+    if (single) {
+      startRound(room);
+    } else {
+      socket.emit('waiting');
+    }
   });
 
   socket.on('joinGame', ({ room, name }) => {
@@ -44,23 +51,24 @@ io.on('connection', (socket) => {
       socket.emit('full');
       return;
     }
-    game.players[socket.id] = name;
+    const color = playerColors[1];
+    game.players[socket.id] = { name, color };
     game.scores[name] = 0;
     socket.join(room);
-    io.to(room).emit('playerJoined', game.players);
-    if (Object.keys(game.players).length === 2) {
+    io.to(room).emit('playerJoined', Object.values(game.players).map(p => p.name));
+    if (!game.single && Object.keys(game.players).length === 2) {
       startRound(room);
     }
   });
 
-  socket.on('foundWord', ({ room, word, player }) => {
+  socket.on('foundWord', ({ room, word, player, positions }) => {
     const game = games[room];
     if (!game || !game.words.includes(word)) return;
     const index = game.words.indexOf(word);
     if (index === -1) return;
     game.words.splice(index, 1);
     game.scores[player] += 1;
-    io.to(room).emit('updateScores', game.scores);
+    io.to(room).emit('wordFound', { word, player, positions, scores: game.scores });
     if (game.words.length === 0) {
       game.currentRound += 1;
       if (game.currentRound >= game.rounds) {
@@ -86,10 +94,16 @@ function startRound(room) {
   const { board, words } = generateBoard(categories[game.category]);
   game.board = board;
   game.words = words;
+  const players = {};
+  Object.values(game.players).forEach(p => {
+    players[p.name] = p.color;
+  });
   io.to(room).emit('startRound', {
     round: game.currentRound + 1,
     board,
-    words: words.slice()
+    words: words.slice(),
+    players,
+    category: game.category
   });
 }
 

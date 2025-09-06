@@ -4,10 +4,31 @@
   <meta charset="UTF-8">
   <title>Sopa de Letras</title>
   <style>
-    body { font-family: sans-serif; }
-    #board { display: grid; grid-template-columns: repeat(12, 30px); gap: 2px; margin-top: 20px; }
-    #board div { width: 30px; height: 30px; text-align: center; line-height: 30px; border: 1px solid #ccc; cursor: pointer; }
-    .found { background: yellow; }
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(45deg, #ff9a9e, #fad0c4);
+    }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(12, 30px);
+      gap: 2px;
+      margin-top: 20px;
+      touch-action: none;
+    }
+    #board div {
+      width: 30px;
+      height: 30px;
+      text-align: center;
+      line-height: 30px;
+      border: 1px solid #ccc;
+      cursor: pointer;
+      user-select: none;
+    }
+    .selecting { background: #fff176; }
+    .found { opacity: 0.8; }
+    #found span { display: block; }
   </style>
 </head>
 <body>
@@ -19,11 +40,13 @@
     <input id="rounds" type="number" value="3" min="1" max="10">
     <button id="create">Crear</button>
     <button id="join">Unirse</button>
+    <button id="solo">Solo</button>
   </div>
   <div id="game" style="display:none;">
     <div id="info"></div>
     <div id="board"></div>
     <div id="words"></div>
+    <div id="found"></div>
     <div id="scores"></div>
   </div>
   <script src="/socket.io/socket.io.js"></script>
