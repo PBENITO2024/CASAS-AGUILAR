@@ -50,6 +50,10 @@ let currentWords = [];
 let categoryColor = '#fff';
 
 socket.on('waiting', () => {
+  const setupDiv = document.getElementById('setup');
+  const gameDiv = document.getElementById('game');
+  setupDiv.style.display = 'none';
+  gameDiv.style.display = 'block';
   document.getElementById('info').textContent = 'Esperando a segundo jugador...';
 });
 
