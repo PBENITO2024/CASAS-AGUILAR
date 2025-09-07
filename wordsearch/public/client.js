@@ -50,10 +50,6 @@ let currentWords = [];
 let categoryColor = '#fff';
 
 socket.on('waiting', () => {
-  const setupDiv = document.getElementById('setup');
-  const gameDiv = document.getElementById('game');
-  setupDiv.style.display = 'none';
-  gameDiv.style.display = 'block';
   document.getElementById('info').textContent = 'Esperando a segundo jugador...';
 });
 
@@ -138,37 +134,21 @@ boardDiv.addEventListener('pointerenter', e => {
   }
 });
 
-function isStraightLine(pos) {
-  if (pos.length < 2) return false;
-  const dr = Math.sign(pos[1][0] - pos[0][0]);
-  const dc = Math.sign(pos[1][1] - pos[0][1]);
-  if (dr === 0 && dc === 0) return false;
-  if (!(dr === 0 || dc === 0 || Math.abs(dr) === Math.abs(dc))) return false;
-  for (let i = 1; i < pos.length; i++) {
-    if (pos[i][0] - pos[i - 1][0] !== dr || pos[i][1] - pos[i - 1][1] !== dc) {
-      return false;
-    }
-  }
-  return true;
-}
-
 window.addEventListener('pointerup', () => {
   if (!selecting) return;
   selecting = false;
   const letters = selected.map(c => c.dataset.letter);
   const word = letters.join('');
   const rev = letters.slice().reverse().join('');
+  selected.forEach(c => c.classList.remove('selecting'));
   const player = document.getElementById('name').value;
   const room = document.getElementById('room').value;
-  const positions = selected.map(c => [parseInt(c.dataset.row), parseInt(c.dataset.col)]);
-  selected.forEach(c => c.classList.remove('selecting'));
+  const positions = selected.map(c => [c.dataset.row, c.dataset.col]);
   let chosen = null;
-  if (isStraightLine(positions)) {
-    if (currentWords.includes(word)) chosen = word;
-    else if (currentWords.includes(rev)) {
-      chosen = rev;
-      positions.reverse();
-    }
+  if (currentWords.includes(word)) chosen = word;
+  else if (currentWords.includes(rev)) {
+    chosen = rev;
+    positions.reverse();
   }
   if (chosen) {
     socket.emit('foundWord', { room, word: chosen, player, positions });
