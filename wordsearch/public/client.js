@@ -138,17 +138,37 @@ window.addEventListener('pointerup', () => {
   if (!selecting) return;
   selecting = false;
   const letters = selected.map(c => c.dataset.letter);
-  const word = letters.join('');
-  const rev = letters.slice().reverse().join('');
+  const positions = selected.map(c => [parseInt(c.dataset.row), parseInt(c.dataset.col)]);
   selected.forEach(c => c.classList.remove('selecting'));
   const player = document.getElementById('name').value;
   const room = document.getElementById('room').value;
-  const positions = selected.map(c => [c.dataset.row, c.dataset.col]);
+
+  let valid = false;
+  if (positions.length > 1) {
+    const dr = positions[1][0] - positions[0][0];
+    const dc = positions[1][1] - positions[0][1];
+    if (Math.abs(dr) <= 1 && Math.abs(dc) <= 1 && (dr !== 0 || dc !== 0)) {
+      valid = true;
+      for (let i = 2; i < positions.length; i++) {
+        if (positions[i][0] - positions[i-1][0] !== dr || positions[i][1] - positions[i-1][1] !== dc) {
+          valid = false;
+          break;
+        }
+      }
+    }
+  } else if (positions.length === 1) {
+    valid = true;
+  }
+
   let chosen = null;
-  if (currentWords.includes(word)) chosen = word;
-  else if (currentWords.includes(rev)) {
-    chosen = rev;
-    positions.reverse();
+  const word = letters.join('');
+  const rev = letters.slice().reverse().join('');
+  if (valid) {
+    if (currentWords.includes(word)) chosen = word;
+    else if (currentWords.includes(rev)) {
+      chosen = rev;
+      positions.reverse();
+    }
   }
   if (chosen) {
     socket.emit('foundWord', { room, word: chosen, player, positions });
