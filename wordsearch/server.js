@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const { generateBoard } = require('./game');
+const { loadGames, saveGames } = require('./storage');
 
 const app = express();
 const server = http.createServer(app);
@@ -23,6 +24,8 @@ const categories = {
 const playerColors = ['#e91e63', '#2196f3'];
 const games = {};
 
+loadGames().then(saved => Object.assign(games, saved));
+
 io.on('connection', (socket) => {
   socket.on('createGame', ({ room, name, category, rounds, single }) => {
     if (games[room]) return;
@@ -43,6 +46,7 @@ io.on('connection', (socket) => {
     } else {
       socket.emit('waiting');
     }
+    saveGames(games);
   });
 
   socket.on('joinGame', ({ room, name }) => {
@@ -78,6 +82,7 @@ io.on('connection', (socket) => {
         startRound(room);
       }
     }
+    saveGames(games);
   });
 
   socket.on('disconnecting', () => {
@@ -86,6 +91,7 @@ io.on('connection', (socket) => {
       delete games[room];
       io.to(room).emit('playerLeft');
     });
+    saveGames(games);
   });
 });
 
@@ -105,6 +111,7 @@ function startRound(room) {
     players,
     category: game.category
   });
+  saveGames(games);
 }
 
 app.use(express.static('public'));
