@@ -2,54 +2,31 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Sopa de Letras</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vivex - Inventario Comercial</title>
+  <meta http-equiv="refresh" content="0; url=/inventario.html">
+  <link rel="canonical" href="/inventario.html">
   <style>
     body {
-      font-family: sans-serif;
+      align-items: center;
+      background: #f4f6f7;
+      color: #2c3e50;
+      display: flex;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      justify-content: center;
+      min-height: 100vh;
       margin: 0;
-      padding: 20px;
-      background: linear-gradient(45deg, #ff9a9e, #fad0c4);
-    }
-    #board {
-      display: grid;
-      grid-template-columns: repeat(12, 30px);
-      gap: 2px;
-      margin-top: 20px;
-      touch-action: none;
-    }
-    #board div {
-      width: 30px;
-      height: 30px;
       text-align: center;
-      line-height: 30px;
-      border: 1px solid #ccc;
-      cursor: pointer;
-      user-select: none;
     }
-    .selecting { background: #fff176; }
-    .found { opacity: 0.8; }
-    #found span { display: block; }
+    a { color: #3498db; font-weight: 700; }
   </style>
 </head>
 <body>
-  <h1>Sopa de Letras</h1>
-  <div id="setup">
-    <input id="name" placeholder="Tu nombre">
-    <input id="room" placeholder="Sala">
-    <select id="category"></select>
-    <input id="rounds" type="number" value="3" min="1" max="10">
-    <button id="create">Crear</button>
-    <button id="join">Unirse</button>
-    <button id="solo">Solo</button>
-  </div>
-  <div id="game" style="display:none;">
-    <div id="info"></div>
-    <div id="board"></div>
-    <div id="words"></div>
-    <div id="found"></div>
-    <div id="scores"></div>
-  </div>
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="client.js"></script>
+  <main>
+    <h1>Vivex - Inventario Comercial</h1>
+    <p>Abriendo el panel en línea...</p>
+    <p><a href="/inventario.html">Entrar al inventario</a></p>
+  </main>
+  <script>window.location.replace('/inventario.html');</script>
 </body>
 </html>
