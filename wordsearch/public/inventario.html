@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vivex - Inventario Comercial</title>
+  <style>
+    :root {
+      --primary-color: #2c3e50;
+      --accent-color: #3498db;
+      --success-color: #27ae60;
+      --warning-color: #e67e22;
+      --danger-color: #c0392b;
+      --bg-color: #f4f6f7;
+      --text-color: #333333;
+      --panel-bg: #ffffff;
+    }
+
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; min-height: 100vh; box-sizing: border-box; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    h1 { font-size: 24px; color: var(--primary-color); margin: 0; }
+
+    .app-container { display: flex; gap: 20px; align-items: flex-start; min-height: calc(100vh - 80px); }
+    .left-panel { flex: 1 1 60%; background: var(--panel-bg); padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; max-height: calc(100vh - 80px); box-sizing: border-box; }
+    .right-panel { flex: 1 1 40%; background: var(--panel-bg); padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: sticky; top: 20px; min-width: 300px; max-height: calc(100vh - 80px); box-sizing: border-box; overflow-y: auto; }
+
+    .search-box { flex: 1 1 260px; min-width: 220px; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; box-sizing: border-box; }
+    .search-box:focus { border-color: var(--accent-color); outline: none; }
+    .filter-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 15px; }
+    .filter-panel select { width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+    .filter-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 15px; }
+    .filter-button { padding: 12px 14px; border-radius: 6px; border: none; background: var(--accent-color); color: white; cursor: pointer; font-weight: 600; }
+    .filter-button.reset { background: #7f8c8d; }
+    .table-container { overflow: auto; flex-grow: 1; min-height: 220px; }
+
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { background-color: var(--primary-color); color: white; padding: 12px; font-size: 13px; position: sticky; top: 0; z-index: 10; }
+    td { padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; cursor: pointer; transition: background 0.2s; }
+    tr:hover td { background-color: #f0f8ff; }
+    .row-active td { background-color: #eaf2f8; border-left: 4px solid var(--accent-color); }
+
+    .panel-title { font-size: 20px; color: var(--primary-color); border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; margin-bottom: 20px; }
+    .detail-item { margin-bottom: 15px; background: #fdfefe; padding: 10px; border-radius: 6px; border: 1px solid #f2f4f4; }
+    .detail-label { font-size: 11px; color: #7f8c8d; text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 4px; }
+    .detail-value { font-size: 16px; color: #2c3e50; font-weight: 500; word-break: break-word; line-height: 1.4; }
+    .detail-subvalue { margin-top: 8px; font-size: 13px; color: #34495e; line-height: 1.5; }
+    .detail-subvalue div { margin-top: 3px; }
+    .detail-price { font-size: 28px; color: var(--success-color); font-weight: bold; margin: 25px 0; text-align: center; }
+    .badge-inventory { display: inline-block; padding: 6px 10px; border-radius: 4px; font-size: 14px; font-weight: bold; }
+    .inventory-high { background-color: #e8f8f5; color: var(--success-color); }
+    .inventory-low { background-color: #fcf3cf; color: var(--warning-color); }
+    .btn-action { width: 100%; padding: 14px; background-color: var(--success-color); color: white; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; transition: background 0.3s; margin-top: 10px; }
+    .btn-action:hover { background-color: #219a52; }
+    .empty-state { text-align: center; color: #95a5a6; padding: 60px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
+    .loading-state { text-align: center; color: var(--accent-color); padding: 40px; font-weight: bold; }
+    .error-state { text-align: center; color: var(--danger-color); padding: 30px; font-weight: bold; }
+    .dashboard { display: flex; flex-direction: column; gap: 12px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 12px; }
+    .card { background: #fbfcfd; border: 1px solid #eef2f3; padding: 12px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+    .card h4 { margin: 0 0 8px 0; font-size: 14px; color: var(--primary-color); }
+    .metric { font-size: 28px; font-weight: 700; }
+    .chart-wrap { height: 180px; }
+    .chart-canvas { width: 100% !important; height: 100% !important; }
+
+    @media (max-width: 900px) {
+      body { padding: 12px; }
+      .app-container { flex-direction: column; }
+      .left-panel, .right-panel { width: 100%; max-height: none; }
+      .right-panel { position: static; min-width: 0; }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="header">
+    <h1>Panel de Inventario de Viviendas</h1>
+  </div>
+
+  <div class="app-container">
+    <main class="left-panel">
+      <div class="filter-panel">
+        <select id="projectFilter"><option value="">Todos los proyectos</option></select>
+        <select id="prototipoFilter"><option value="">Todos los prototipos</option></select>
+        <select id="viviendaFilter"><option value="">Todas las ubicaciones</option></select>
+      </div>
+      <div class="filter-actions">
+        <input type="text" id="searchInput" class="search-box" placeholder="Buscar por proyecto, vivienda, prototipo, DTU o precio...">
+        <button class="filter-button reset" id="resetFilters" type="button">Limpiar filtros</button>
+      </div>
+
+      <section class="dashboard" aria-label="Resumen del inventario">
+        <div class="cards">
+          <div class="card"><h4>Total de unidades</h4><div id="totalUnits" class="metric" style="color: var(--primary-color);">0</div></div>
+          <div class="card"><h4>Precio promedio</h4><div id="avgPrice" class="metric" style="color: var(--success-color);">$0</div></div>
+          <div class="card"><h4>Precio / m² promedio</h4><div id="avgPricePerM2" class="metric" style="color: #e67e22;">$0</div></div>
+        </div>
+        <div class="cards">
+          <div class="card chart-wrap"><h4>Unidades por proyecto</h4><canvas id="chartProyecto" class="chart-canvas"></canvas></div>
+          <div class="card chart-wrap"><h4>Unidades por prototipo</h4><canvas id="chartPrototipo" class="chart-canvas"></canvas></div>
+        </div>
+        <div class="cards">
+          <div class="card chart-wrap"><h4>Costo total por proyecto</h4><canvas id="chartTotalCostProject" class="chart-canvas"></canvas></div>
+          <div class="card chart-wrap"><h4>Precio promedio por proyecto</h4><canvas id="chartAvgPriceProject" class="chart-canvas"></canvas></div>
+          <div class="card chart-wrap"><h4>m² promedio por proyecto</h4><canvas id="chartAvgM2Project" class="chart-canvas"></canvas></div>
+        </div>
+        <div class="card chart-wrap"><h4>Rango de precios</h4><canvas id="chartPrecio" class="chart-canvas"></canvas></div>
+      </section>
+
+      <div class="table-container">
+        <table>
+          <thead><tr><th>Vivienda</th><th>Proyecto</th><th>Prototipo</th><th>M²</th><th>Precio</th></tr></thead>
+          <tbody id="tableBody"><tr><td colspan="5" class="loading-state">Conectando con Google Sheets y descargando inventario...</td></tr></tbody>
+        </table>
+      </div>
+    </main>
+
+    <aside class="right-panel" id="detailPanel">
+      <div class="empty-state">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#bdc3c7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 20px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        <h3 style="margin:0 0 10px 0; color:#7f8c8d;">Ninguna propiedad seleccionada</h3>
+        <p style="margin:0; font-size: 14px;">Haz clic en una fila de la tabla para analizar la disponibilidad y copiar la ficha comercial.</p>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/1D-Dz0xa4Y3L4ALHuROs8eqzN_bEIrOxt/export?format=csv';
+    const moneyFormatter = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 });
+    const moneyFormatterWithCents = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
+    const charts = {};
+    let inventario = [];
+    let selectedVivienda = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('projectFilter').addEventListener('change', () => { actualizarFiltros(); aplicarFiltros(); });
+      document.getElementById('prototipoFilter').addEventListener('change', () => { actualizarFiltros(); aplicarFiltros(); });
+      document.getElementById('viviendaFilter').addEventListener('change', aplicarFiltros);
+      document.getElementById('searchInput').addEventListener('input', aplicarFiltros);
+      document.getElementById('resetFilters').addEventListener('click', reiniciarFiltros);
+      inicializarApp();
+    });
+
+    async function inicializarApp() {
+      try {
+        if (window.location.protocol === 'file:') throw new Error('Abre este archivo desde un servidor local, por ejemplo con "npm start" o "python3 -m http.server 8000".');
+        const response = await fetch(GOOGLE_SHEETS_CSV_URL);
+        if (!response.ok) throw new Error('No se pudo acceder al documento. Verifica que los permisos estén en "Cualquier persona con el enlace".');
+        const data = await response.text();
+        if (/^\s*<(!doctype|html)/i.test(data)) throw new Error('Google está pidiendo iniciar sesión. Cambia los permisos del archivo a acceso público.');
+        inventario = parseInventarioCsv(data);
+        if (!inventario.length) {
+          setTableMessage('El archivo CSV está vacío o tiene un formato no compatible.');
+          actualizarDashboard([]);
+          return;
+        }
+        actualizarFiltros();
+        renderizarTabla(inventario);
+      } catch (error) {
+        console.error('Error al sincronizar:', error);
+        const mensaje = error instanceof TypeError ? 'No se pudo conectar a Google Sheets. Asegúrate de que la hoja esté pública y accesible desde el navegador.' : error.message;
+        setTableMessage(`Error de sincronización: ${mensaje}`, true);
+        actualizarDashboard([]);
+      }
+    }
+
+    function parseInventarioCsv(csv) {
+      return parseCsv(csv).slice(1).map(columnas => ({
+        vivienda: limpiarCampo(columnas[0]),
+        dtu: limpiarCampo(columnas[1]),
+        prototipo: limpiarCampo(columnas[2]),
+        proyecto: limpiarCampo(columnas[3]),
+        m2: limpiarCampo(columnas[4]),
+        precio: parsePrecio(limpiarCampo(columnas[5]))
+      })).filter(item => item.vivienda || item.proyecto || item.prototipo);
+    }
+
+    function parseCsv(csv) {
+      const filas = [];
+      let fila = [];
+      let campo = '';
+      let entreComillas = false;
+      for (let i = 0; i < csv.length; i += 1) {
+        const char = csv[i];
+        const next = csv[i + 1];
+        if (char === '"' && entreComillas && next === '"') { campo += '"'; i += 1; }
+        else if (char === '"') entreComillas = !entreComillas;
+        else if (char === ',' && !entreComillas) { fila.push(campo); campo = ''; }
+        else if ((char === '\n' || char === '\r') && !entreComillas) {
+          if (char === '\r' && next === '\n') i += 1;
+          fila.push(campo);
+          if (fila.some(value => value.trim() !== '')) filas.push(fila);
+          fila = [];
+          campo = '';
+        } else campo += char;
+      }
+      fila.push(campo);
+      if (fila.some(value => value.trim() !== '')) filas.push(fila);
+      return filas;
+    }
+
+    function limpiarCampo(value = '') { return String(value).trim(); }
+
+    function parsePrecio(value) {
+      const normalized = String(value).replace(/\s/g, '').replace(/\$/g, '').replace(/,/g, '').replace(/[^0-9.-]/g, '');
+      return Number.parseFloat(normalized) || 0;
+    }
+
+    function parseM2(value) {
+      const normalized = String(value).replace(/\s/g, '').replace(',', '.').replace(/[^0-9.-]/g, '');
+      return Number.parseFloat(normalized) || 0;
+    }
+
+    function setTableMessage(message, isError = false) {
+      document.getElementById('tableBody').innerHTML = `<tr><td colspan="5" class="${isError ? 'error-state' : 'loading-state'}"></td></tr>`;
+      document.querySelector('#tableBody td').textContent = message;
+    }
+
+    function renderizarTabla(datos) {
+      const tbody = document.getElementById('tableBody');
+      if (!datos.length) {
+        actualizarDashboard([]);
+        setTableMessage('No se encontraron resultados para la búsqueda.');
+        return;
+      }
+      tbody.textContent = '';
+      datos.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.title = `Proyecto: ${item.proyecto}`;
+        [item.vivienda, item.proyecto, item.prototipo, item.m2, moneyFormatter.format(item.precio)].forEach((value, index) => {
+          const td = document.createElement('td');
+          if (index === 0) { const strong = document.createElement('strong'); strong.textContent = value; td.appendChild(strong); }
+          else td.textContent = value;
+          if (index === 4) { td.style.color = '#27ae60'; td.style.fontWeight = 'bold'; }
+          tr.appendChild(td);
+        });
+        tr.addEventListener('click', () => seleccionarFila(tr, item));
+        tbody.appendChild(tr);
+      });
+      const activeRow = selectedVivienda && [...tbody.querySelectorAll('tr')].find(row => row.firstElementChild?.textContent.trim() === selectedVivienda);
+      seleccionarFila(activeRow || tbody.querySelector('tr'), datos.find(i => i.vivienda === selectedVivienda) || datos[0]);
+      actualizarDashboard(datos);
+    }
+
+    function seleccionarFila(row, item) {
+      if (!row || !item) return;
+      document.querySelectorAll('#tableBody tr').forEach(r => r.classList.remove('row-active'));
+      row.classList.add('row-active');
+      selectedVivienda = item.vivienda;
+      mostrarDetalles(item);
+    }
+
+    function actualizarDashboard(datos) {
+      const total = datos.length;
+      const avgPrice = total ? datos.reduce((sum, item) => sum + item.precio, 0) / total : 0;
+      const validM2Items = datos.filter(item => parseM2(item.m2) > 0);
+      const avgPricePerM2 = validM2Items.length ? validM2Items.reduce((sum, item) => sum + (item.precio / parseM2(item.m2)), 0) / validM2Items.length : 0;
+      document.getElementById('totalUnits').textContent = total;
+      document.getElementById('avgPrice').textContent = moneyFormatter.format(avgPrice);
+      document.getElementById('avgPricePerM2').textContent = moneyFormatter.format(avgPricePerM2);
+      const proyectoCounts = contarPorClave(datos, 'proyecto');
+      const prototipoCounts = contarPorClave(datos, 'prototipo');
+      const precioBins = contarPrecios(datos);
+      const avgPriceByProject = promedioPorClave(datos, 'proyecto', item => item.precio);
+      const avgM2ByProject = promedioPorClave(datos, 'proyecto', item => parseM2(item.m2));
+      const stackedCost = totalCostPorProyectoPrototipo(datos);
+      charts.proyecto = crearOCrearChart(charts.proyecto, 'chartProyecto', 'bar', Object.keys(proyectoCounts), Object.values(proyectoCounts), '#3498db');
+      charts.prototipo = crearOCrearChart(charts.prototipo, 'chartPrototipo', 'doughnut', Object.keys(prototipoCounts), Object.values(prototipoCounts), '#2c3e50');
+      charts.totalCostProject = crearOCrearStackedChart(charts.totalCostProject, 'chartTotalCostProject', stackedCost.projectLabels, stackedCost.datasets, true);
+      charts.avgPriceProject = crearOCrearChart(charts.avgPriceProject, 'chartAvgPriceProject', 'bar', Object.keys(avgPriceByProject), Object.values(avgPriceByProject), '#f39c12', true);
+      charts.avgM2Project = crearOCrearChart(charts.avgM2Project, 'chartAvgM2Project', 'bar', Object.keys(avgM2ByProject), Object.values(avgM2ByProject), '#8e44ad');
+      charts.precio = crearOCrearChart(charts.precio, 'chartPrecio', 'bar', precioBins.labels, precioBins.counts, '#27ae60');
+    }
+
+    function contarPorClave(datos, clave) { return datos.reduce((acc, item) => { const valor = item[clave] || 'Sin dato'; acc[valor] = (acc[valor] || 0) + 1; return acc; }, {}); }
+
+    function promedioPorClave(datos, clave, getValue) {
+      const acumulado = datos.reduce((acc, item) => {
+        const llave = item[clave] || 'Sin dato';
+        const valor = getValue(item) || 0;
+        if (!acc[llave]) acc[llave] = { sum: 0, count: 0 };
+        acc[llave].sum += valor;
+        acc[llave].count += 1;
+        return acc;
+      }, {});
+      return Object.fromEntries(Object.entries(acumulado).map(([llave, data]) => [llave, data.count ? data.sum / data.count : 0]));
+    }
+
+    function totalCostPorProyectoPrototipo(datos) {
+      const proyectos = [...new Set(datos.map(item => item.proyecto || 'Sin dato'))].sort();
+      const prototipos = [...new Set(datos.map(item => item.prototipo || 'Sin dato'))].sort();
+      const matrix = Object.fromEntries(proyectos.map(proyecto => [proyecto, Object.fromEntries(prototipos.map(proto => [proto, 0]))]));
+      datos.forEach(item => { matrix[item.proyecto || 'Sin dato'][item.prototipo || 'Sin dato'] += item.precio; });
+      const colors = ['#16a085', '#27ae60', '#2980b9', '#f39c12', '#9b59b6', '#c0392b'];
+      return { projectLabels: proyectos, datasets: prototipos.map((proto, index) => ({ label: proto, data: proyectos.map(proyecto => matrix[proyecto][proto] || 0), backgroundColor: colors[index % colors.length], borderColor: '#ffffff', borderWidth: 1, stack: 'stack1' })) };
+    }
+
+    function contarPrecios(datos) {
+      const bins = [{ label: 'Menos de 1M', min: 0, max: 1000000 }, { label: '1M - 1.5M', min: 1000000, max: 1500000 }, { label: '1.5M - 2M', min: 1500000, max: 2000000 }, { label: 'Más de 2M', min: 2000000, max: Infinity }];
+      const counts = bins.map(() => 0);
+      datos.forEach(item => { const index = bins.findIndex(bin => item.precio >= bin.min && item.precio < bin.max); if (index >= 0) counts[index] += 1; });
+      return { labels: bins.map(bin => bin.label), counts };
+    }
+
+    function crearOCrearChart(chart, canvasId, type, labels, data, color, isCurrency = false) {
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      if (chart) { chart.data.labels = labels; chart.data.datasets[0].data = data; chart.data.datasets[0].backgroundColor = Array.isArray(color) ? color : labels.map(() => color); chart.update(); return chart; }
+      return new Chart(ctx, { type, data: { labels, datasets: [{ label: isCurrency ? 'Valor' : 'Cantidad', data, backgroundColor: Array.isArray(color) ? color : labels.map(() => color), borderColor: color, borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: type === 'doughnut' }, tooltip: { callbacks: { label: context => isCurrency ? moneyFormatter.format(context.raw) : `${context.formattedValue} unidades` } } }, scales: type === 'doughnut' ? {} : { y: { beginAtZero: true, ticks: { precision: 0 } } } } });
+    }
+
+    function crearOCrearStackedChart(chart, canvasId, labels, datasets, isCurrency = false) {
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      if (chart) { chart.data.labels = labels; chart.data.datasets = datasets; chart.update(); return chart; }
+      return new Chart(ctx, { type: 'bar', data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top' }, tooltip: { callbacks: { label: context => isCurrency ? `${context.dataset.label}: ${moneyFormatter.format(context.raw)}` : `${context.dataset.label}: ${context.formattedValue}` } } }, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0, callback: value => isCurrency ? moneyFormatter.format(value) : value } } } } });
+    }
+
+    function extraerNivel(item) {
+      const texto = `${item.vivienda || ''} ${item.dtu || ''}`.trim().toUpperCase();
+      if (/\bPB\b/.test(texto) || /\b100\b/.test(texto)) return 'Nivel 1';
+      const rangoMatch = texto.match(/\b(\d{3})\b/);
+      if (rangoMatch) { const nivel = Math.floor(parseInt(rangoMatch[1], 10) / 100); if (nivel >= 1 && nivel <= 8) return `Nivel ${nivel}`; }
+      const nivelMatch = texto.match(/\b(NIVEL|PISO)\s*[:-\s]*(\d+)\b/i);
+      if (nivelMatch?.[2]) { const nivel = parseInt(nivelMatch[2], 10); if (nivel >= 1 && nivel <= 8) return `Nivel ${nivel}`; }
+      return '';
+    }
+
+    function desglosePorNivel(items) {
+      return Object.entries(items.reduce((acc, item) => { const nivel = extraerNivel(item) || 'Sin nivel definido'; acc[nivel] = (acc[nivel] || 0) + 1; return acc; }, {})).sort((a, b) => a[0].localeCompare(b[0], 'es', { numeric: true }));
+    }
+
+    function mostrarDetalles(item) {
+      const panel = document.getElementById('detailPanel');
+      const precioTotal = moneyFormatterWithCents.format(item.precio);
+      const itemsPrototipo = inventario.filter(i => i.prototipo === item.prototipo && i.proyecto === item.proyecto);
+      const unidadesDisponibles = itemsPrototipo.length;
+      panel.textContent = '';
+      panel.append(
+        crearElemento('h2', 'panel-title', item.vivienda),
+        crearDetalle('Proyecto / Desarrollo', `📍 ${item.proyecto}`),
+        crearDetalle('Prototipo', `🏠 ${item.prototipo}`),
+        crearDisponibilidad(itemsPrototipo, unidadesDisponibles),
+        crearDetalle('Superficie Total', `📐 ${item.m2} m²`),
+        crearElemento('div', 'detail-price', precioTotal),
+        crearBotonWhatsApp(item, precioTotal, unidadesDisponibles)
+      );
+    }
+
+    function crearElemento(tag, className, text) { const element = document.createElement(tag); element.className = className; element.textContent = text; return element; }
+
+    function crearDetalle(label, value) {
+      const wrapper = crearElemento('div', 'detail-item', '');
+      wrapper.innerHTML = '<span class="detail-label"></span><span class="detail-value"></span>';
+      wrapper.querySelector('.detail-label').textContent = label;
+      wrapper.querySelector('.detail-value').textContent = value;
+      return wrapper;
+    }
+
+    function crearDisponibilidad(itemsPrototipo, unidadesDisponibles) {
+      const wrapper = crearElemento('div', 'detail-item', '');
+      wrapper.style.borderLeft = `4px solid ${unidadesDisponibles === 1 ? '#e67e22' : '#27ae60'}`;
+      const badgeClass = unidadesDisponibles === 1 ? 'inventory-low' : 'inventory-high';
+      const badgeText = unidadesDisponibles === 1 ? '¡Última unidad disponible!' : `${unidadesDisponibles} unidades disponibles`;
+      wrapper.innerHTML = `<span class="detail-label">Disponibilidad del Prototipo</span><span class="detail-value">🏢 ${unidadesDisponibles} unidad${unidadesDisponibles !== 1 ? 'es' : ''} totales</span><div class="detail-subvalue"></div><span class="badge-inventory ${badgeClass}"></span>`;
+      const detail = wrapper.querySelector('.detail-subvalue');
+      desglosePorNivel(itemsPrototipo).forEach(([nivel, cantidad]) => { const line = document.createElement('div'); line.textContent = `${nivel}: ${cantidad} unidad${cantidad !== 1 ? 'es' : ''}`; detail.appendChild(line); });
+      wrapper.querySelector('.badge-inventory').textContent = badgeText;
+      return wrapper;
+    }
+
+    function crearBotonWhatsApp(item, precioTotal, unidadesDisponibles) {
+      const button = crearElemento('button', 'btn-action', 'Compartir por WhatsApp');
+      button.type = 'button';
+      button.addEventListener('click', () => copiarWhatsApp(item, precioTotal, unidadesDisponibles));
+      return button;
+    }
+
+    function actualizarFiltros() {
+      const proyectoSelect = document.getElementById('projectFilter');
+      const prototipoSelect = document.getElementById('prototipoFilter');
+      const viviendaSelect = document.getElementById('viviendaFilter');
+      const selectedProjectValue = proyectoSelect.value;
+      const selectedPrototipoValue = prototipoSelect.value;
+      const selectedViviendaValue = viviendaSelect.value;
+      const proyectos = [...new Set(inventario.map(item => item.proyecto).filter(Boolean))].sort();
+      const prototiposFiltrados = selectedProjectValue ? [...new Set(inventario.filter(item => item.proyecto === selectedProjectValue).map(item => item.prototipo).filter(Boolean))].sort() : [...new Set(inventario.map(item => item.prototipo).filter(Boolean))].sort();
+      const viviendasUnicas = Object.values(inventario.filter(item => !selectedProjectValue || item.proyecto === selectedProjectValue).filter(item => !selectedPrototipoValue || item.prototipo === selectedPrototipoValue).reduce((acc, item) => { if (!acc[item.vivienda]) acc[item.vivienda] = item; return acc; }, {})).sort((a, b) => a.vivienda.localeCompare(b.vivienda, 'es', { numeric: true }));
+      llenarSelect(proyectoSelect, 'Todos los proyectos', proyectos.map(p => [p, p]), selectedProjectValue);
+      llenarSelect(prototipoSelect, 'Todos los prototipos', prototiposFiltrados.map(p => [p, p]), prototiposFiltrados.includes(selectedPrototipoValue) ? selectedPrototipoValue : '');
+      llenarSelect(viviendaSelect, 'Todas las ubicaciones', viviendasUnicas.map(v => [v.vivienda, `${v.vivienda} — ${moneyFormatter.format(v.precio)}`]), viviendasUnicas.some(v => v.vivienda === selectedViviendaValue) ? selectedViviendaValue : '');
+    }
+
+    function llenarSelect(select, placeholder, options, selectedValue) {
+      select.textContent = '';
+      select.appendChild(new Option(placeholder, ''));
+      options.forEach(([value, label]) => select.appendChild(new Option(label, value)));
+      select.value = selectedValue;
+    }
+
+    function aplicarFiltros() {
+      const termino = document.getElementById('searchInput').value.toLowerCase().trim();
+      const proyectoSeleccionado = document.getElementById('projectFilter').value;
+      const prototipoSeleccionado = document.getElementById('prototipoFilter').value;
+      const viviendaSeleccionada = document.getElementById('viviendaFilter').value;
+      const resultados = inventario.filter(i => {
+        const searchable = [i.vivienda, i.proyecto, i.prototipo, i.dtu, i.m2, moneyFormatter.format(i.precio), String(i.precio)].join(' ').toLowerCase();
+        return searchable.includes(termino) && (!proyectoSeleccionado || i.proyecto === proyectoSeleccionado) && (!prototipoSeleccionado || i.prototipo === prototipoSeleccionado) && (!viviendaSeleccionada || i.vivienda === viviendaSeleccionada);
+      });
+      selectedVivienda = viviendaSeleccionada || selectedVivienda;
+      renderizarTabla(resultados);
+    }
+
+    function reiniciarFiltros() {
+      document.getElementById('searchInput').value = '';
+      selectedVivienda = null;
+      ['projectFilter', 'prototipoFilter', 'viviendaFilter'].forEach(id => { document.getElementById(id).value = ''; });
+      actualizarFiltros();
+      renderizarTabla(inventario);
+    }
+
+    function copiarWhatsApp(item, precio, unidades) {
+      const notaEscasez = unidades === 1 ? '🚨 *¡Atención! Es la última unidad disponible con estas características.*' : `Quedan solo ${unidades} unidades de este prototipo.`;
+      const mensaje = `Hola, te comparto la información de esta excelente oportunidad inmobiliaria:\n\n📍 *Desarrollo:* ${item.proyecto}\n🏠 *Prototipo:* ${item.prototipo}\n📐 *Superficie:* ${item.m2} m²\n🔑 *Unidad:* ${item.vivienda}\n💰 *Inversión:* ${precio}\n\n${notaEscasez}\n\nQuedo a tu disposición para agendar una visita a la propiedad.`;
+      if (navigator.clipboard?.writeText) navigator.clipboard.writeText(mensaje).then(() => alert('¡Ficha técnica copiada! Incluye el gatillo de escasez lista para enviar.')).catch(() => prompt('Copia manualmente este mensaje:', mensaje));
+      else prompt('Copia manualmente este mensaje:', mensaje);
+    }
+  </script>
+</body>
+</html>
